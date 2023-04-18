@@ -17,20 +17,17 @@ class pBFT:
 	def votingPhase(self,message):
 		if self.cPhase != 'voting':
 			return False
-		if message['sender'] in self.votingPhase['recvIds']:
+		if message['round'] != self.round or message['sender'] in self.votingPhase['recvIds']:
 			return False
 		else:
 			self.votingPhase['recvIds'].append(message['sender'])
-		if message['digest'] not in self.votingPhase.keys():
-			# new value 
-			pass
-		elif message['identity'] not in votingPhase[message['digest']].keys():
-			# new entry 
-			pass 
-			if len(votingPhase[message['digest']].keys()) >= n - f:
-				self.cPhase = 'precommit'
-				votingPhase = {}
-				return True 
+		if message['value'] not in votingPhase['rmsg'].keys():
+			votingPhase['rmsg'][message['value']] = []
+		votingPhase['rmsg'][message['value']].append(message['sender'])
+		if len(votingPhase['rmsg'][message['value']]) >= n - f:
+			self.cPhase = 'precommit'
+			votingPhase = {'recvIds':[],'rmsg':{}}
+			return True 
 		else:
 			# duplicate message ignore this bitch 
 			return False
@@ -46,7 +43,7 @@ class pBFT:
 	def preCommitPhase(self,message):
 		if self.cPhase != 'precommit':
 			return False
-		if message['sender'] in self.preCommitPhase['recvIds']:
+		if message['round'] != self.round or message['sender'] in self.preCommitPhase['recvIds']:
 			return False
 		else:
 			self.preCommitPhase['recvIds'].append(message['sender'])
