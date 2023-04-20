@@ -11,6 +11,9 @@ class NetworkSimulator:
 		self.nodeList = nodeList
 		self.param = param
 		self.networkingFilePath = nfp
+		self.tdelay = []
+		for nl in self.nodeList:
+			self.tdelay.append(0)
 
 	def mutateFile(self,nodeId):
 		lock = True
@@ -48,5 +51,10 @@ class NetworkSimulator:
 	
 	def simulate(self):
 		while True:
+			index = 0
 			for i in self.nodeList:
-				self.mutateFile(i)
+				if self.tdelay <= 0:
+					self.mutateFile(i)
+					self.tdelay[index] = np.random.exponential(params[0])
+				else:
+					self.tdelay -= 0.0001
