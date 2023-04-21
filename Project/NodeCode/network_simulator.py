@@ -7,6 +7,17 @@ import json
 
 class NetworkSimulator:
 	def __init__(self,nodeList,nfp='./',distribution='exponential',param=[1,0.4]):
+		"""
+		args:
+			nodeList: list of node identities
+			nfp: networking file path
+			distribution: distribution of time delay
+			param: parameters of distribution
+		
+		returns:
+			None
+
+		"""
 		self.distribution = distribution
 		self.nodeList = nodeList
 		self.param = param
@@ -55,6 +66,6 @@ class NetworkSimulator:
 			for i in self.nodeList:
 				if self.tdelay <= 0:
 					self.mutateFile(i)
-					self.tdelay[index] = np.random.exponential(params[0])
+					self.tdelay[index] = np.random.exponential(self.params[0])
 				else:
 					self.tdelay -= 0.0001
