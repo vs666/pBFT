@@ -69,6 +69,6 @@ class NetworkSimulator:
 			for i in self.nodeList:
 				if self.tdelay <= 0:
 					self.mutateFile(i)
-					self.tdelay[index] = np.random.exponential(self.params[0])
+					self.tdelay[index] = np.random.exponential(self.param[0])
 				else:
 					self.tdelay -= 0.0001
