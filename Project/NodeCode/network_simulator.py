@@ -19,9 +19,12 @@ class NetworkSimulator:
 		lock = True
 		lockFilePath = self.networkingFilePath + nodeId + '_lock.json'
 		while lock:
-			if json.load(open(lockFilePath,'r'))["status"] == 0:
-				lock = False
-				break
+			try:
+				if json.load(open(lockFilePath,'r'))["status"] == 0:
+					lock = False
+					break
+			except:
+				continue
 		with open(lockFilePath,'w') as f:
 			json.dump({"status":1}, f)
 		
@@ -53,8 +56,9 @@ class NetworkSimulator:
 		while True:
 			index = 0
 			for i in self.nodeList:
-				if self.tdelay <= 0:
+				if self.tdelay[index] <= 0:
 					self.mutateFile(i)
-					self.tdelay[index] = np.random.exponential(params[0])
+					self.tdelay[index] = np.random.exponential(self.param[0])
 				else:
-					self.tdelay -= 0.0001
+					self.tdelay[index] -= 0.01
+				index += 1
