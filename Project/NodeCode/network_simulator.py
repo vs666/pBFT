@@ -13,10 +13,8 @@ class NetworkSimulator:
 			nfp: networking file path
 			distribution: distribution of time delay
 			param: parameters of distribution
-		
 		returns:
 			None
-
 		"""
 		self.distribution = distribution
 		self.nodeList = nodeList
@@ -67,8 +65,11 @@ class NetworkSimulator:
 		while True:
 			index = 0
 			for i in self.nodeList:
-				if self.tdelay <= 0:
+				if self.tdelay[index] <= 0:
 					self.mutateFile(i)
-					self.tdelay[index] = np.random.exponential(self.param[0])
+					if self.distribution == 'exponential':
+						self.tdelay[index] = np.random.exponential(self.param[0])
+					elif self.distribution == 'sync':
+						self.tdelay[index] = 0
 				else:
-					self.tdelay -= 0.0001
+					self.tdelay[index] -= 0.0001
