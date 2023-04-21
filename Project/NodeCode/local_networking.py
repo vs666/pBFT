@@ -4,7 +4,7 @@ import json
 class Network:
 	def __init__(self,nodeIdentity,nfp=None):
 		self.identity = nodeIdentity
-		self.networkingFilePath = '../GlobalFS/'
+		self.networkingFilePath = './'
 		if nfp != None:
 			self.networkingFilePath = nfp
 
@@ -12,9 +12,12 @@ class Network:
 		lock = True
 		lockFilePath = self.networkingFilePath + destination_identity + '_lock.json'
 		while lock:
-			if json.load(open(lockFilePath,'r'))["status"] == 0:
-				lock = False
-				break
+			try:
+				if json.load(open(lockFilePath,'r'))["status"] == 0:
+					lock = False
+					break
+			except:
+				continue
 		with open(lockFilePath,'w') as f:
 			json.dump({"status":1}, f)
 		messageFilePath = self.networkingFilePath + destination_identity + '_pre_messages.json'
@@ -29,12 +32,14 @@ class Network:
 		lockFilePath = self.networkingFilePath + self.identity + '_lock.json'
 		lock = True
 		while lock:
-			if json.load(open(lockFilePath,'r'))["status"] == 0:
-				lock = False
-				break
+			try:
+				if json.load(open(lockFilePath,'r'))["status"] == 0:
+					lock = False
+					break
+			except:
+				continue
 		with open(lockFilePath,'w') as f:
 			json.dump({"status":1}, f)
-			print("Opened 1 mutex for ",self.identity)
 			
 		messageFilePath = self.networkingFilePath + self.identity + '_messages.json'
 		msgList =  json.load(open(messageFilePath,'r'))
