@@ -29,6 +29,13 @@ class Consensus:
 	def sniffNodes(self,fileName):
 		pass 
 
+	def verifyMessage(self,message):
+		'''
+		args:
+			message: message to be verified
+
+		'''
+		pass
 	def recvVote(self,message):
 		'''
 			1. Verify Identity and Signature 

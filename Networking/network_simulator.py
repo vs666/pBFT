@@ -2,6 +2,8 @@ import time
 import numpy as np 
 import requests
 import sys
+import json
+
 
 class NetworkSimulator:
 	def __init__(self,messages_file,drop_probability,delay_params:dict,server_url:str,adv_manipulation=None):
@@ -13,7 +15,6 @@ class NetworkSimulator:
 		self.adv_manipulation = adv_manipulation
 
 	def readFile(self):
-		dat = None
 		with open(self.messages_file,'w') as file:
 			dat = json.load(file)
 		return dat
@@ -30,8 +31,7 @@ class NetworkSimulator:
 		elif self.delay_params['mode'] == 'expo':
 			time.sleep(np.random.exponential(self.delay_params['lambda']))
 		elif self.delay_params['mode'] == 'vecvec':
-			# too lazy to google sampling command, will implement later.
-			pass
+			time.sleep(np.random.choice(self.delay_params['vector'],p=self.delay_params['probabilities']))
 
 	def runSimulator(self):
 		while True:
