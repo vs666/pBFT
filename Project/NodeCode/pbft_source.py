@@ -1,6 +1,7 @@
 import heapq
 class pBFT:
 	def __init__(self,identity:str,nodeList:list,networkObject,maxDelay:int):
+		print("Initializing Node...",identity)
 		self.identity = identity
 		self.nodeList = nodeList
 		self.networkingObject = networkObject
@@ -58,7 +59,7 @@ class pBFT:
 		# its a min heap so , 
 		top_ele[0] -= score
 		heapq.heappush(self.heap , top_ele)
-
+		print('changing leader for',self.identity)
 		self.resetClock()
 		self.preCommitPhase = {'recvIds':[],'rmsg':{}}
 		self.votingPhase = {'recvIds':[],'rmsg':{}}
@@ -117,6 +118,7 @@ class pBFT:
 
 
 	def start(self):
+		print("Starting node...",self.identity)
 		while True:
 			'''
 				Step 1: Recv msg 

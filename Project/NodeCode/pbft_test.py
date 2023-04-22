@@ -32,8 +32,13 @@ nodeList = []
 for fn in NL:
 	nodeList.append(pBFT(fn,NL,Network(fn,'./'),DELAY))
 
+threads = []
+
 for fn in nodeList:
 	thread = Thread(target=startNode,args=(fn,))
 	thread.start()
+	threads.append(thread)
+
+for thread in threads:
 	thread.join()
 
