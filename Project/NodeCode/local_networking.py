@@ -58,6 +58,8 @@ class Network:
 					pass
 			# print(f"{msgList = }, {m2 = } {self.identity = }")
 			msgList["messages"].append(m2)
+			msgFp.seek(0)
+			msgFp.truncate(0)
 			json.dump(msgList,msgFp)
 			# with open(lockFilePath,'w') as f:
 			# 	json.dump({"status":0},f)
@@ -94,6 +96,8 @@ class Network:
 				# 	json.dump({"status":0}, f)
 				# self.releaseLock()
 				return None
+			msgFp.seek(0)
+			msgFp.truncate(0)
 			rmsg = msgList["messages"][0]
 			json.dump({"messages":msgList["messages"][1:]},msgFp)
 			# with open(lockFilePath,'w') as f:

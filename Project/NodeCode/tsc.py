@@ -4,12 +4,12 @@ class Locker:
         self.fp = fp
         self.log = log
     def __enter__ (self):
-        print("Accquiring Lock",self.log)
+        # print("Accquiring Lock",self.log)
         fcntl.flock(self.fp.fileno(), fcntl.LOCK_EX)
 
     def __exit__ (self, _type, value, tb):
         fcntl.flock(self.fp.fileno(), fcntl.LOCK_UN)
-        print("Releasing Lock",self.log)
+        # print("Releasing Lock",self.log)
         self.fp.close()
 
 # fp = open('lockfile.lck','r')
