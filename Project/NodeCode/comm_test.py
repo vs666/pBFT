@@ -39,7 +39,16 @@ for i in range(10):
 	b = random.randint(1,5) 
 	while a == b:
 		b = random.randint(1,5)
+	print("Sending from f",a," to f",b,sep="")
 	networkList[a-1].sendMessage('f'+str(b),{"msg":"Hello from f"+str(a)})
 	for z in range(5):
 		if random.randint(0,1) == 1:
 			print("message recv for f",z+1,networkList[z].recvMessage())
+
+print("Program Over")
+
+while True:
+	for z in range(5):
+		rm = networkList[z].recvMessage()
+		if rm != None:
+			print("message recv for f",z+1,rm)
