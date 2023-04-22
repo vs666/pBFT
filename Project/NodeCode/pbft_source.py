@@ -10,6 +10,7 @@ class pBFT:
 		self.currentMessage = {}
 		self.votingPhase = {}
 		self.preCommitPhase = {}
+		self.requestQueue = []
 		self.f = len(self.nodeList)//3
 		self.n = len(self.nodeList)
 		self.cPhase = 'propose'
@@ -105,6 +106,9 @@ class pBFT:
 			# duplicate message ignore this bitch 
 			return False
 
+	def clientRequest(self,rmsg):
+		self.requestQueue.append(rmsg['value'])
+
 	def viewChange(self,proof=None):
 		if proof == None:
 			self.boradCast({'type':"view-change",'round':self.round,"identity":self.identity,'proof':"None"})
@@ -132,6 +136,11 @@ class pBFT:
 		with open('./'+self.identity+'_ledger.json','w') as f:
 			json.dumps(cleg['ledger'].append(message))
 
+	def proposalValue(self):
+		self.message = {'type':'propose','value':self.requestQueue[0],'identity':self.identity,'sender':self.identity,'round':self.round}
+		self.boradCast(self.message)
+		self.cPhase = 'voting'
+		self.resetClock()
 
 	def start(self):
 		print("Starting node...",self.identity)
@@ -157,9 +166,15 @@ class pBFT:
 			if rmsg == None:
 				continue
 
+			elif self.cPhase == 'propose' and self.isleader():
+				self.proposeValue()
+
 			elif rmsg['round'] != self.round:
 				# ideally, save this message (if from future round) to be processed later, but for now ignore the message 
 				pass
+
+			elif rmsg['type'] == 'client-request':
+				self.clientRequest(rmgs)
 
 			elif rmsg['type'] == 'view-change':
 				self.viewChangeRecv(rmsg)
