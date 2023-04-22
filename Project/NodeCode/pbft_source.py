@@ -16,6 +16,7 @@ class pBFT:
 		self.delay = maxDelay
 		self.maxDelay = maxDelay
 		self.heap = []
+		self.discountFactor = 1.0
 		for node in nodeList:
 			heapq.heappush(self.heap , [0,node])
 
@@ -72,7 +73,7 @@ class pBFT:
 	def changeLeader(self,score:int):
 		top_ele = heapq.heappop(self.heap)
 		# its a min heap so , 
-		top_ele[0] -= score
+		top_ele[0] = self.discountFactor * top_ele[0] - score
 		heapq.heappush(self.heap , top_ele)
 		print('changing leader for',self.identity)
 		self.resetClock()

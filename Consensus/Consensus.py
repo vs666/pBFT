@@ -2,6 +2,20 @@
 
 class Consensus:
 	def __init__(self,pubKey, privKey,nbrFile:str,params):
+		'''
+		args:
+			pubKey: public key of the node
+
+			privKey: private key of the node
+
+			nbrFile: file containing the list of nodes
+
+			params: parameters of the consensus algorithm
+		
+		returns:
+			None
+
+		'''
 		self.pkey = pubKey 
 		self.skey = privKey
 		self.cround = 0
@@ -10,11 +24,18 @@ class Consensus:
 		self.nodes = [] # set of known nodes
 		self.state = 'None'
 		self.params = params
-		sniffNodes(nbrFile)
+		self.sniffNodes(nbrFile)
 
 	def sniffNodes(self,fileName):
 		pass 
 
+	def verifyMessage(self,message):
+		'''
+		args:
+			message: message to be verified
+
+		'''
+		pass
 	def recvVote(self,message):
 		'''
 			1. Verify Identity and Signature 
@@ -27,12 +48,12 @@ class Consensus:
 
 		# Check for duplicates (done by itself)
 		# Add to the list of messages 
-		if message['value'] not in commit.keys():
-			commit[message['value']] = []
-		if message['signature'] not in commit[message['value']]:
-			commit[message['value']].append(message['signature']) # signature is the tuple (sign, msg, pkey)
+		if message['value'] not in self.commit.keys():
+			self.commit[message['value']] = []
+		if message['signature'] not in self.commit[message['value']]:
+			self.commit[message['value']].append(message['signature']) # signature is the tuple (sign, msg, pkey)
 
-		if max([len(commit[key]) for key in commit.keys()]) > 2*self.params['n']//3: 
+		if max([len(self.commit[key]) for key in self.commit.keys()]) > 2*self.params['n']//3: 
 			return 'Completed'
 		return 'Waiting'
 
