@@ -24,7 +24,7 @@ class pBFT:
 	def isleader(self):
 		Leader = False
 		top_ele = heapq.heappop(self.heap)
-		if top_ele[2] == self.id:
+		if top_ele[1] == self.identity:
 			Leader = True
 		heapq.heappush(self.heap,top_ele)
 		return Leader
@@ -137,8 +137,10 @@ class pBFT:
 			json.dumps(cleg['ledger'].append(message))
 
 	def proposalValue(self):
-		self.message = {'type':'propose','value':self.requestQueue[0],'identity':self.identity,'sender':self.identity,'round':self.round}
-		self.boradCast(self.message)
+		if(len(self.requestQueue) !=0):
+			self.message = {'type':'propose','value':self.requestQueue[0],'identity':self.identity,'sender':self.identity,'round':self.round}
+		self.broadCast(self.message)
+		self.requestQueue.pop(0)
 		self.cPhase = 'voting'
 		self.resetClock()
 
@@ -167,7 +169,7 @@ class pBFT:
 				continue
 
 			elif self.cPhase == 'propose' and self.isleader():
-				self.proposeValue()
+				self.proposalValue()
 
 			elif rmsg['round'] != self.round:
 				# ideally, save this message (if from future round) to be processed later, but for now ignore the message 
