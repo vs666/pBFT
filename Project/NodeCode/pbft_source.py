@@ -1,4 +1,5 @@
 import heapq
+import json
 class pBFT:
 	def __init__(self,identity:str,nodeList:list,networkObject,maxDelay:int):
 		print("Initializing Node...",identity)
@@ -8,9 +9,10 @@ class pBFT:
 		self.round = 0
 		self.viewChangeType1 = []
 		self.currentMessage = {}
-		self.votingPhase = {}
-		self.preCommitPhase = {}
+		self.votingPhase = {'recvIds':[],'rmsg':{}}
+		self.preCommitPhase = {'recvIds':[],'rmsg':{}}
 		self.requestQueue = []
+		self.message = {}
 		self.f = len(self.nodeList)//3
 		self.n = len(self.nodeList)
 		self.cPhase = 'propose'
@@ -35,7 +37,7 @@ class pBFT:
 	def resetClock(self):
 		self.delay = self.maxDelay
 
-	def boradCast(self,message:dict):
+	def broadCast(self,message:dict):
 		# asyncLim = 100
 		# while asyncLim > 0:
 		# 	asyncLim -= 1
@@ -43,7 +45,7 @@ class pBFT:
 		for node in self.nodeList:
 			self.networkingObject.sendMessage(node,message)
 
-	def votingPhase(self,message):
+	def voting_phase(self,message):
 		if self.cPhase != 'voting':
 			return False
 		if message['round'] != self.round or message['sender'] in self.votingPhase['recvIds']:
@@ -53,7 +55,7 @@ class pBFT:
 		if message['value'] not in self.votingPhase['rmsg'].keys():
 			self.votingPhase['rmsg'][message['value']] = []
 		self.votingPhase['rmsg'][message['value']].append(message['sender'])
-		if len(self.votingPhase['rmsg'][message['value']]) >= n - f:
+		if len(self.votingPhase['rmsg'][message['value']]) >= self.n - self.f:
 			self.cPhase = 'precommit'
 			self.resetClock()
 			self.votingPhase = {'recvIds':[],'rmsg':{}}
@@ -62,7 +64,7 @@ class pBFT:
 			# duplicate message ignore this bitch 
 			return False
 
-	def proposalPhase(self,message):
+	def proposal_phase(self,message):
 		if self.cPhase != 'propose':
 			return False
 		else:
@@ -83,11 +85,11 @@ class pBFT:
 		self.message = {}
 		self.cPhase = 'propose'
 
-	def preCommitPhase(self,message):
+	def precommit_phase(self,message):
 		if self.cPhase != 'precommit':
-			return False
+			return False , ""
 		if message['round'] != self.round or message['sender'] in self.preCommitPhase['recvIds']:
-			return False
+			return False , ""
 		else:
 			self.preCommitPhase['recvIds'].append(message['sender'])
 		if message['value'] not in self.preCommitPhase['rmsg'].keys():
@@ -96,24 +98,28 @@ class pBFT:
 
 		if len(self.preCommitPhase['rmsg'][message['value']]) >= self.n - self.f:
 			self.cPhase = 'precommit'
+			msg_to_send = self.preCommitPhase['rmsg']
+			print(msg_to_send,"consensus value ===============")
 			self.resetClock()
 			self.changeLeader(1)
 			self.preCommitPhase = {'recvIds':[],'rmsg':{}}
-			return True 
+			return True , msg_to_send
 		elif len(self.preCommitPhase['rmsg'][message['value']]) >= self.f + 1 and self.message['value'] != message['value']:
 			self.viewChange(json.dumps({'single':self.message,'multiple':self.preCommitPhase['rmsg'][message['value']]}))
+			return False , ""
 		else:
 			# duplicate message ignore this bitch 
-			return False
+			return False , ""
 
 	def clientRequest(self,rmsg):
 		self.requestQueue.append(rmsg['value'])
+		# self.cPhase = 'propose'
 
 	def viewChange(self,proof=None):
 		if proof == None:
-			self.boradCast({'type':"view-change",'round':self.round,"identity":self.identity,'proof':"None"})
+			self.broadCast({'type':"view-change",'round':self.round,"identity":self.identity,'proof':"None"})
 		elif type(proof) == str:
-			self.boradCast({'type':"view-change",'round':self.round,"identity":self.identity,'proof':proof})
+			self.broadCast({'type':"view-change",'round':self.round,"identity":self.identity,'proof':proof})
 
 	def viewChangeRecv(self,message):
 		if message['proof'] == "None" and message['identity'] not in self.viewChangeType1:
@@ -129,20 +135,21 @@ class pBFT:
 			pass
 
 	def addToFile(self,message:dict):
+		print(message)
 		cleg = {}
 		with open('./'+self.identity+'_ledger.json','r') as f:
 			cleg = json.load(f)
 		
-		with open('./'+self.identity+'_ledger.json','w') as f:
+		with open('./'+self.identity+'_ledger.json','a') as f:
 			json.dumps(cleg['ledger'].append(message))
 
 	def proposalValue(self):
 		if(len(self.requestQueue) !=0):
 			self.message = {'type':'propose','value':self.requestQueue[0],'identity':self.identity,'sender':self.identity,'round':self.round}
-		self.broadCast(self.message)
-		self.requestQueue.pop(0)
-		self.cPhase = 'voting'
-		self.resetClock()
+			self.broadCast(self.message)
+			self.requestQueue.pop(0)
+			self.cPhase = 'voting'
+			self.resetClock()
 
 	def start(self):
 		print("Starting node...",self.identity)
@@ -159,41 +166,58 @@ class pBFT:
 
 			self.delay-=1
 
-			if self.delay <= 0:
-				self.viewChange()
+			# if self.delay <= 0:
+			# 	self.viewChange()
 
 			rmsg = self.networkingObject.recvMessage()
 			rv = False
-
+			# print(self.identity , rmsg)
 			if rmsg == None:
 				continue
+			print(rmsg)
+			
+			if rmsg['round'] != self.round:
+    			# ideally, save this message (if from future round) to be processed later, but for now ignore the message 
+				continue
 
-			elif self.cPhase == 'propose' and self.isleader():
+			if rmsg['type'] == 'client-request':
+    				self.clientRequest(rmsg)
+
+			if self.cPhase == 'propose' and self.isleader():
+				print("in propose phase" , len(self.requestQueue))
 				self.proposalValue()
 
 			elif rmsg['round'] != self.round:
 				# ideally, save this message (if from future round) to be processed later, but for now ignore the message 
 				pass
 
-			elif rmsg['type'] == 'client-request':
-				self.clientRequest(rmgs)
-
 			elif rmsg['type'] == 'view-change':
 				self.viewChangeRecv(rmsg)
 
-			elif rmsg['type'] == 'propose' and self.proposalPhase(rmsg):
+			elif rmsg['type'] == 'propose' and self.proposal_phase(rmsg):
 				rmsg['type'] = 'vote'
 				rmsg['sender'] = self.identity
 				# signature shit here 
-				self.boradCast(rmsg)
+				self.broadCast(rmsg)
 
-			elif rmsg['type'] == 'vote' and self.votingPhase(rmsg):
+			elif rmsg['type'] == 'vote' and self.voting_phase(rmsg):
 				rmsg['type'] = 'precommit'
 				rmsg['sender'] = self.identity
 				# signature shit here 
-				self.boradCast(rmsg)
+				self.broadCast(rmsg)
 
-			elif rmsg['type'] == 'precommit' and self.preCommitPhase(rmsg):
+			# elif rmsg['type'] == 'precommit' and self.precommit_phase(rmsg):
 				# add to file or something
-				self.addToFile(self.message)
+				# print("in final consensus----------------------------")
+				# print(self.message)
+				# self.addToFile(self.message)
+
+			elif rmsg['type'] == 'precommit' :
+				flag , val  = self.precommit_phase(rmsg)
+				print(flag)
+				if flag:
+					# add to file or something
+					print("in final consensus----------------------------")
+					print(val)
+					self.addToFile(val)
 
