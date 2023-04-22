@@ -19,10 +19,25 @@ class pBFT:
 		for node in nodeList:
 			heapq.heappush(self.heap , [0,node])
 
+	def isleader(self):
+		Leader = False
+		top_ele = heapq.heappop(self.heap)
+		if top_ele[2] == self.id:
+			Leader = True
+		heapq.heappush(self.heap,top_ele)
+		return Leader
+
+	# def clientMessage(self,message):
+
+
 	def resetClock(self):
 		self.delay = self.maxDelay
 
 	def boradCast(self,message:dict):
+		# asyncLim = 100
+		# while asyncLim > 0:
+		# 	asyncLim -= 1
+		print("Node ",self.identity,"broadcasting",message)
 		for node in self.nodeList:
 			self.networkingObject.sendMessage(node,message)
 

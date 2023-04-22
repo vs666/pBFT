@@ -1,5 +1,6 @@
 import json 
 import os
+from tsc import Locker
 
 class Network:
 	def __init__(self,nodeIdentity,nfp=None):
@@ -13,7 +14,7 @@ class Network:
 		return os.path.exists('./glock.lock') and os.path.exists(lpath)
 
 	def lockFile(self):
-		print(f"{self.identity} is locking for {self.identity}")
+		# print(f"{self.identity} is locking for {self.identity}")
 		with open('./glock.lock','w') as fp:
 			pass
 		lpath = self.networkingFilePath + self.identity + '.lock'
@@ -24,15 +25,15 @@ class Network:
 			pass
 
 	def releaseLock(self):
-		print(f"{self.identity} is releasing for {self.identity}")
+		# print(f"{self.identity} is releasing for {self.identity}")
 		os.remove('./glock.lock')
 		lpath = self.networkingFilePath + self.identity + '.lock'
 		os.remove(lpath)
 
 	def sendMessage(self,destination_identity:str,m2:dict):
 		# print("Hello World")
-		lock = True
-		lockFilePath = self.networkingFilePath + destination_identity + '_lock.json'
+		# lock = True
+		# lockFilePath = self.networkingFilePath + destination_identity + '_lock.json'
 		
 		# while lock:
 		# 	try:
@@ -42,24 +43,25 @@ class Network:
 		# 	except Exception:
 		# 		continue
 
-		while self.checkLock():
-			pass
-		self.lockFile()
+		# while self.checkLock():
+		# 	pass
+		# self.lockFile()
 		messageFilePath = self.networkingFilePath + destination_identity + '_pre_messages.json'
-		msgList = None
-		while True:
-			try:
-				msgList = json.load(open(messageFilePath,'r'))
-				break
-			except Exception:
-				pass
-		# print(f"{msgList = }, {m2 = } {self.identity = }")
-		msgList["messages"].append(m2)
-		with open(messageFilePath,'w') as f:
-			json.dump(msgList,f)
-		# with open(lockFilePath,'w') as f:
-		# 	json.dump({"status":0},f)
-		self.releaseLock()
+		msgFp = open(messageFilePath,'r+')
+		with Locker(msgFp,messageFilePath):
+			msgList = None
+			while True:
+				try:
+					msgList = json.load(msgFp)
+					break
+				except Exception:
+					pass
+			# print(f"{msgList = }, {m2 = } {self.identity = }")
+			msgList["messages"].append(m2)
+			json.dump(msgList,msgFp)
+			# with open(lockFilePath,'w') as f:
+			# 	json.dump({"status":0},f)
+		# self.releaseLock()
 	
 	def recvMessage(self):
 		lockFilePath = self.networkingFilePath + self.identity + '_lock.json'
@@ -73,32 +75,30 @@ class Network:
 		# 		pass
 		# with open(lockFilePath,'w') as f:
 		# 	json.dump({"status":1}, f)
-			
-		while self.checkLock():
-			pass
-		self.lockFile()
+		
+		# while self.checkLock():
+		# 	pass
+		# self.lockFile()
 
-		messageFilePath = self.networkingFilePath + self.identity + '_messages.json'
-		while True:
-			try:
-				msgList =  json.load(open(messageFilePath,'r'))
-				break
-			except:
-				pass	
-		if len(msgList["messages"]) == 0:
+		messageFilePath = self.networkingFilePath + self.identity + '_pre_messages.json'
+		msgFp = open(messageFilePath,'r+')
+		with Locker(msgFp,messageFilePath):
+			while True:
+				try:
+					msgList =  json.load(msgFp)
+					break
+				except:
+					pass	
+			if len(msgList["messages"]) == 0:
+				# with open(lockFilePath,'w') as f:
+				# 	json.dump({"status":0}, f)
+				# self.releaseLock()
+				return None
+			rmsg = msgList["messages"][0]
+			json.dump({"messages":msgList["messages"][1:]},msgFp)
 			# with open(lockFilePath,'w') as f:
 			# 	json.dump({"status":0}, f)
-			self.releaseLock()
-			return None
-		rmsg = msgList["messages"][0]
-		with open(messageFilePath,'w') as f:
-			json.dump({"messages":msgList["messages"][1:]},f)
-		# with open(lockFilePath,'w') as f:
-		# 	json.dump({"status":0}, f)
-		self.releaseLock()
+			# self.releaseLock()
 		return rmsg 
-
-
-
 
 		

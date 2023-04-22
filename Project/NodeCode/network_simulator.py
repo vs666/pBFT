@@ -5,6 +5,7 @@ import sys
 import random
 import json 
 import os
+from tsc import Locker
 
 class NetworkSimulator:
 	def __init__(self,nodeList,nfp='./',distribution='exponential',param=[1,0.4]):
@@ -30,7 +31,7 @@ class NetworkSimulator:
 		return os.path.exists('./glock.lock') and os.path.exists(lpath)
 
 	def lockFile(self,id):
-		print(f"simulator is locking for {id}")
+		# print(f"simulator is locking for {id}")
 		with open('./glock.lock','w') as fp:
 			pass
 		lpath = self.networkingFilePath + id + '.lock'
@@ -38,15 +39,15 @@ class NetworkSimulator:
 			pass
 
 	def releaseLock(self,id):
-		print(f"simulator is releasing for {id}")
+		# print(f"simulator is releasing for {id}")
 		os.remove('./glock.lock')
 		lpath = self.networkingFilePath + id + '.lock'
 		os.remove(lpath)
 
 
 	def mutateFile(self,nodeId):
-		lock = True
-		lockFilePath = self.networkingFilePath + nodeId + '_lock.json'
+		# lock = True
+		# lockFilePath = self.networkingFilePath + nodeId + '_lock.json'
 		# while lock:
 		# 	try:
 		# 		if json.load(open(lockFilePath,'r'))["status"] == 0:
@@ -56,47 +57,49 @@ class NetworkSimulator:
 		# 		continue
 		# with open(lockFilePath,'w') as f:
 		# 	json.dump({"status":1}, f)
-		while self.checkLock(nodeId):
-			pass
-		self.lockFile(nodeId)
+		# while self.checkLock(nodeId):
+		# 	pass
+		# self.lockFile(nodeId)
 
 		rmessageFilePath = self.networkingFilePath + nodeId + '_pre_messages.json'
-		while True:
-			try:
-				msgList =  json.load(open(rmessageFilePath,'r'))
-				break
-			except:
-				pass
+		rmsgFp = open(rmessageFilePath,'r+')
+		with Locker(rmsgFp,rmessageFilePath):
+			while True:
+				try:
+					msgList =  json.load(rmsgFp)
+					rmsgFp.seek(0)
+					break
+				except:
+					pass
 
-		if len(msgList["messages"]) == 0:
-			# with open(lockFilePath,'w') as f:
-			# 	json.dump({"status":0}, f)
-			self.releaseLock(nodeId)
-			return None
-		index = random.randint(0,len(msgList["messages"])-1)
-		rmsg = msgList["messages"][index]
-		nmsg = []
-		for ind in range(len(msgList["messages"])):
-			if ind != index:
-				nmsg.append(msgList["messages"][ind])
-		msgList["messages"] = nmsg
-		with open(rmessageFilePath,'w') as f:
-			json.dump(msgList,f)
+			if len(msgList["messages"]) == 0:
+				# with open(lockFilePath,'w') as f:
+				# 	json.dump({"status":0}, f)
+				# self.releaseLock(nodeId)
+				return None
+			index = random.randint(0,len(msgList["messages"])-1)
+			rmsg = msgList["messages"][index]
+			nmsg = []
+			for ind in range(len(msgList["messages"])):
+				if ind != index:
+					nmsg.append(msgList["messages"][ind])
+			msgList["messages"] = nmsg
+			json.dump(msgList,rmsgFp)
+
 		# print("Transferring message for",nodeId,rmsg)
 		messageFilePath = self.networkingFilePath + nodeId + '_messages.json'
-		while True:
-			try:
-				msgList = json.load(open(messageFilePath,'r'))
-				break
-			except:
-				pass
+		msgFp = open(messageFilePath,'r+')
+		with Locker(msgFp,messageFilePath):
+			while True:
+				try:
+					msgList = json.load(open(messageFilePath,'r'))
+					break
+				except:
+					pass
 
-		msgList["messages"].append(rmsg)
-		with open(messageFilePath,'w') as f:
-			json.dump(msgList,f)
-		# with open(lockFilePath,'w') as f:
-		# 	json.dump({"status":0}, f)
-		self.releaseLock(nodeId)
+			msgList["messages"].append(rmsg)
+			json.dump(msgList,msgFp)
+
 
 	def simulate(self):
 		while True:
